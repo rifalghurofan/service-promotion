@@ -15,20 +15,20 @@ const read = async (req, res) => {
 const create = async (req, res) => {
     //validations
     const Schema = check.object({
-        title: check.string().required().min(1),
-        name: check.string().required().min(1),
-        caption: check.string().required().min(1),
-        category_id: check.string().required().min(1),
-        cover_url: check.string().required().min(1),
-        creator_id: check.string().required().min(1),
-        description: check.string().required().min(1),
-        province_target: check.string().required().min(1),
-        city_taget: check.string().required().min(1),
-        rejected_message: check.string().required().min(1),
-        reviewer_id: check.string().required().min(1),
-        status: check.string().required().min(1),
-        total_clicks: check.string().required().min(1),
-        total_views: check.string().required().min(1)
+        title: check.string().required(),
+        name: check.string().required(),
+        caption: check.string().required(),
+        category_id: check.string().required(),
+        cover_url: check.string().required(),
+        creator_id: check.string().required(),
+        description: check.string().required(),
+        province_target: check.string().required(),
+        city_taget: check.string().required(),
+        rejected_message: check.string().required(),
+        reviewer_id: check.string().required(),
+        status: check.string().required(),
+        total_clicks: check.string().required(),
+        total_views: check.string().required()
     }).required();
     const { error } = Schema.validate(req.body)
     if (error) {
