@@ -21,16 +21,16 @@ db.mongoose
         }, 6000000)
     .then(() => {
         console.log("Successfully connect to MongoDB", mongoose.connection.readyState);
-        initial();
+        // initial();
     })
     .catch(err => {
         console.error("Connection error", err);
         process.exit();
     });
 
-function initial() {
-    console.log('initialized!')
-}
+// function initial() {
+//     console.log('initialized!')
+// }
 
 // // routes
 require('./routes/promotions.route')(app);

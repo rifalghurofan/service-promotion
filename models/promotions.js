@@ -17,8 +17,14 @@ const Promotions = mongoose.model(
             type: String,
             enum: ['active', 'passive']
         },
-        total_clicks: String,
-        total_views: String
+        total_clicks: {
+            type: Number,
+            default: 0
+        },
+        total_views: {
+            type: Number,
+            default: 0
+        }
     }, {
         collection: 'Promotions',
         versionKey: false
