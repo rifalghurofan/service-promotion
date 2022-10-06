@@ -1,5 +1,6 @@
 const fs = require('fs');
 const driveAuth = require("../config/driveAuth");
+const { Promotions } = require('../models');
 require("dotenv").config();
 
 const uploadDrive = async (filePath) => {
@@ -76,7 +77,7 @@ const getId = (dataId) => {
 }
 
 const daleteMedia = async (data, res) => {
-    Stories.findOne({ _id: data })
+    Promotions.findOne({ _id: data })
         .then(data => {
             // console.log(await getIdDelete(id))
             const response = (fileId) => {
@@ -85,14 +86,11 @@ const daleteMedia = async (data, res) => {
                     parentId: `${process.env.FOLDER_ID}`,
                 })
             }
-            // console.log(data)
-            const idThumb = getId(data.thumbnail_url);
             const idCov = getId(data.cover_url);
 
-            response(idThumb)
             response(idCov)
 
-            console.log('Updated successfully!')
+            console.log('media has been deleted!')
         })
         .catch(err => {
             console.log(err.message);

@@ -1,19 +1,35 @@
 const Promotions = require("../models/promotions");
 const check = require('joi');
 const driveAuth = require("../config/driveAuth");
-const { uploadDrive, updateDrive, getId, getIdDelete } = require('../utils/drive');
+const { uploadDrive, updateDrive, getId, daleteMedia } = require('../utils/drive');
 require("dotenv").config();
 
 //read data
 const read = async (req, res) => {
     Promotions.find({})
         .then(data => {
-            res.send(data);
+            res.send({ data });
         })
         .catch(err => {
-            res.status(500).send(err.message);
+            res.status(500).send({ message: err });
         });
 };
+
+//total_click & total_views
+const readOne = async (req, res) => {
+    Promotions.findOne({ _id: req.params.id })
+        .then(async data => {
+            const inc = data.total_views += 1;
+            await Promotions.updateOne({
+                total_clicks: inc,
+                total_views: inc
+            })
+            res.send({ data });
+        })
+        .catch(err => {
+            res.status(500).send({ message: err });
+        });
+}
 
 //create data
 const create = async (req, res) => {
@@ -27,22 +43,22 @@ const create = async (req, res) => {
         creator_id: check.string().required(),
         description: check.string().required(),
         province_target: check.string().required(),
-        city_taget: check.string().required(),
+        city_target: check.string().required(),
         rejected_message: check.string().required(),
         reviewer_id: check.string().required(),
         status: check.string().required(),
     }).required();
     const { error } = Schema.validate(req.body)
     if (error) {
-        return res.send(error.message);
+        return res.send({ message: error });
     }
     try {
         Promotions.findOne({ title: req.body.title },
             async function (err, promotions) {
                 if (err) {
-                    res.status(500).send(err.message);
+                    res.status(500).send({ message: err });
                 } if (promotions) {
-                    res.status(500).send(req.body.title + " was already added!");
+                    res.status(500).send({ message: req.body.title + " was already added!" });
                 } else {
 
                     const filePath = req.files; //req for file
@@ -62,20 +78,18 @@ const create = async (req, res) => {
                         creator_id: req.body.creator_id,
                         description: req.body.description,
                         province_target: req.body.province_target,
-                        city_taget: req.body.city_taget,
+                        city_target: req.body.city_target,
                         rejected_message: req.body.rejected_message,
                         reviewer_id: req.body.reviewer_id,
-                        status: req.body.status,
-                        total_clicks: req.body.total_clicks,
-                        total_views: req.body.total_views
+                        status: req.body.status
                     });
 
                     create.save(function (err, result) {
                         if (err) {
-                            res.status(500).send(err.message);
+                            res.status(500).send({ message: err });
                             return;
                         } else {
-                            res.status(500).send('Promotions data created! ' + result);
+                            res.status(500).send({ message: 'Promotions data created! ' + result });
                         }
                     })
                 }
@@ -83,32 +97,16 @@ const create = async (req, res) => {
         )
     } catch (error) {
         console.log(error);
-        res.send(error);
+        res.send({ message: error });
     }
 };
-
-//total_click & total_views
-const readOne = async (req, res) => {
-    Stories.findOne({ _id: req.params.id })
-        .then(async data => {
-            const inc = data.total_views += 1;
-            await Stories.updateOne({
-                total_clicks: inc,
-                total_views: inc
-            })
-            res.send(data);
-        })
-        .catch(err => {
-            res.status(500).send(err.message);
-        });
-}
 
 //update data
 const updating = async (req, res) => {
     Promotions.findOneAndUpdate({ _id: req.params.id })
         .then(async data => {
             //update media func
-            //pasring an id from thumbnail file in Drive
+            //pasring an id from cover file in Drive
             const idCov = getId(data.cover_url);
 
             // the id file to be replaced
@@ -129,7 +127,7 @@ const updating = async (req, res) => {
                 creator_id: check.string().required(),
                 description: check.string().required(),
                 province_target: check.string().required(),
-                city_taget: check.string().required(),
+                city_target: check.string().required(),
                 rejected_message: check.string().required(),
                 reviewer_id: check.string().required(),
                 status: check.string().required(),
@@ -139,7 +137,7 @@ const updating = async (req, res) => {
                 return res.send(error.message);
             }
             // update data
-            const result = await Stories.updateOne({
+            const result = await Promotions.updateOne({
                 title: req.body.title,
                 name: req.body.name,
                 caption: req.body.caption,
@@ -148,7 +146,7 @@ const updating = async (req, res) => {
                 creator_id: req.body.creator_id,
                 description: req.body.description,
                 province_target: req.body.province_target,
-                city_taget: req.body.city_taget,
+                city_target: req.body.city_target,
                 rejected_message: req.body.rejected_message,
                 reviewer_id: req.body.reviewer_id,
                 status: req.body.status,
@@ -156,11 +154,11 @@ const updating = async (req, res) => {
                 total_views: req.body.total_views
             })
             if (result) {
-                res.send('Updated successfully!')
+                res.send({ message: 'Updated successfully!' })
             }
         })
         .catch(err => {
-            res.status(500).send(err.message);
+            res.status(500).send({ message: err });
         });
 }
 
@@ -171,9 +169,9 @@ const deleting = async (req, res) => {
     Promotions.deleteOne({ _id: idData },
         (err) => {
             if (err) {
-                res.send(err.message);
+                res.send({ message: err });
             } else
-                res.send("Data has been deleted!");
+                res.send({ message: "Data has been deleted!" });
         }
     );
 };
