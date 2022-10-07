@@ -1,18 +1,34 @@
 const Promotions = require("../models/promotions");
 const check = require('joi');
-const driveAuth = require("../config/driveAuth");
 const { uploadDrive, updateDrive, getId, daleteMedia } = require('../utils/drive');
 require("dotenv").config();
 
 //read data
 const read = async (req, res) => {
-    Promotions.find({})
-        .then(data => {
-            res.send({ data });
-        })
-        .catch(err => {
-            res.status(500).send({ message: err });
-        });
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const result = {};
+    if (endIndex < (await Promotions.countDocuments().exec())) {
+        result.next = {
+            page: page + 1,
+            limit: limit,
+        };
+    }
+    if (startIndex > 0) {
+        result.previous = {
+            page: page - 1,
+            limit: limit,
+        };
+    }
+    try {
+        result.results = await Promotions.find().limit(limit).skip(startIndex);
+        res.send(result);
+    } catch (err) {
+        res.status(500).json({ message: e.message });
+    }
 };
 
 //total_click & total_views
