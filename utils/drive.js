@@ -90,7 +90,7 @@ const daleteMedia = async (data, res) => {
 
             response(idCov)
 
-            console.log('media has been deleted!')
+            console.log('Promotion media has been deleted!')
         })
         .catch(err => {
             console.log(err.message);

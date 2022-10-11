@@ -8,7 +8,7 @@ const Promotions = mongoose.model(
         category_id: String,
         cover_url: String,
         creator_id: String,
-        description: String,
+        description_id: String,
         province_target: String,
         city_target: String,
         rejected_message: String,
