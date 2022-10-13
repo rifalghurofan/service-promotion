@@ -8,7 +8,12 @@ const Promotions = mongoose.model(
         category_id: String,
         cover_url: String,
         creator_id: String,
-        description_id: String,
+        description_id: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Descriptions"
+            }
+        ],
         province_target: String,
         city_target: String,
         rejected_message: String,
@@ -24,7 +29,9 @@ const Promotions = mongoose.model(
         total_views: {
             type: Number,
             default: 0
-        }
+        },
+        created_at: Object,
+        updated_at: Object,
     }, {
         collection: 'Promotions',
         versionKey: false

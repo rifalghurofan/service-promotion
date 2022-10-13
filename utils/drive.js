@@ -1,6 +1,6 @@
 const fs = require('fs');
 const driveAuth = require("../config/driveAuth");
-const { Promotions } = require('../models');
+const { Promotions, Descriptions } = require('../models');
 require("dotenv").config();
 
 const uploadDrive = async (filePath) => {
@@ -97,9 +97,27 @@ const daleteMedia = async (data, res) => {
         });
 }
 
+//function for deleting descriptions
+const deleteDes = async (data) => {
+    await Promotions.findOne({ _id: data })
+        .then(data => {
+            const id = data.description_id;
+            Descriptions.deleteOne({ _id: id }, (err) => {
+                if (err) {
+                    console.log(err);
+                } else
+                    console.log("Descriptions deleted!");
+            })
+        })
+        .catch(err => {
+            console.log(err.message);
+        });
+}
+
 module.exports = {
     uploadDrive,
     updateDrive,
     getId,
-    daleteMedia
+    daleteMedia,
+    deleteDes
 };

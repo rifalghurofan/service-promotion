@@ -1,19 +1,34 @@
 const Promotions = require("../models/promotions");
 const Descriptions = require("../models/descriptions");
 const check = require('joi');
-const { uploadDrive, updateDrive, getId, daleteMedia } = require('../utils/drive');
+const { uploadDrive, updateDrive, getId, daleteMedia, deleteDes } = require('../utils/drive');
 require("dotenv").config();
 
 //get all data without paginations
 const getAll = async (req, res) => {
-    Promotions.find({})
-        .populate('description_id')
-        .then(data => {
-            res.send(data)
-        })
-        .catch(err => {
-            res.status(500).send(err.message);
-        });
+    let promo = []
+    Promotions.find({},
+        function (err, result) {
+            if (err) {
+                res.send(err.message)
+            } else {
+                promo = result.map((element) => {
+                    const temp = element
+                    temp.created_at =
+                    {
+                        mili: temp.created_at,
+                        micro: temp.created_at * 1000
+                    }
+                    temp.updated_at =
+                    {
+                        mili: temp.updated_at,
+                        micro: temp.updated_at * 1000
+                    }
+                    return temp
+                })
+                res.send(promo)
+            }
+        }).populate('description_id')
 }
 //read data
 const read = async (req, res) => {
@@ -24,8 +39,29 @@ const read = async (req, res) => {
 
     const result = {};
     try {
+        let promo = []
         result.results = await Promotions.find({
             city_target: { $regex: search, $options: 'i' }
+        }, function (err, result) {
+            if (err) {
+                res.send(err.message)
+            } else {
+                promo = result.map((element) => {
+                    const temp = element
+                    temp.created_at =
+                    {
+                        mili: temp.created_at,
+                        micro: temp.created_at * 1000
+                    }
+                    temp.updated_at =
+                    {
+                        mili: temp.updated_at,
+                        micro: temp.updated_at * 1000
+                    }
+                    return temp
+                })
+                res.send(promo)
+            }
         }).clone().populate('description_id').limit(limit).skip(startIndex);
         res.send({
             data: result,
@@ -44,6 +80,7 @@ const create = async (req, res) => {
         title: check.string().required(),
         name: check.string().required(),
         caption: check.string().required(),
+        type: check.string().required(),
         category_id: check.string().required(),
         creator_id: check.string().required(),
         province_target: check.string().empty('').default(null),
@@ -51,10 +88,10 @@ const create = async (req, res) => {
         rejected_message: check.string().required(),
         reviewer_id: check.string().required(),
         status: check.string().required(),
-    }).required();
+    })
     const { error } = Schema.validate(req.body)
     if (error) {
-        return res.send({ message: error });
+        return res.send(error.message);
     }
     try {
         Descriptions.findOne({ title: req.body.title },
@@ -65,22 +102,30 @@ const create = async (req, res) => {
                     res.status(500).send({ message: req.body.title + " was already added!" });
                 } else {
 
-                    const filePath = req.files; //req for file
+                    //req for file
+                    const filePath = req.files;
 
+                    //upload media
                     const covUrl = await uploadDrive(filePath.cover[0])
+                    const content = await uploadDrive(filePath.content[0])
 
                     //get link to save on database Mongo
                     const urlCov = covUrl.data.webViewLink;
-
+                    const urlContent = content.data.webViewLink;
+                    //get value of description from req.body
                     const newDes = new Descriptions({
                         title: req.body.title,
                         name: req.body.name,
                         caption: req.body.caption,
-                        content: req.body.content,
+                        content: urlContent,
                         type: req.body.type
                     })
-                    //get req.body
+
+                    //get value of promotion from req.body
                     const newProm = new Promotions({
+                        title: req.body.title,
+                        name: req.body.name,
+                        caption: req.body.caption,
                         category_id: req.body.category_id,
                         cover_url: urlCov,
                         creator_id: req.body.creator_id,
@@ -89,10 +134,13 @@ const create = async (req, res) => {
                         city_target: req.body.city_target,
                         rejected_message: req.body.rejected_message,
                         reviewer_id: req.body.reviewer_id,
-                        status: req.body.status
-                    });
+                        status: req.body.status,
+                        created_at: Date.now(),
+                        updated_at: Date.now(),
+                    })
 
-                    newProm.save(function (err, result) {//save data to database
+                    //save data to database
+                    newProm.save(function (err, result) {
                         if (err) {
                             res.status(500).send(err.message);
                             return;
@@ -162,82 +210,115 @@ const likeOne = async (req, res) => {
 
 //update data
 const updating = async (req, res) => {
-    Promotions.findOneAndUpdate({ _id: req.params.id })
+    Promotions.findOne({ _id: req.params.id })
         .then(async data => {
-            //pasring an id from cover file in Drive
-            const idCov = getId(data.cover_url);
+            // console.log(data)
+            // store media to database
+            async function toDatabase(urlCover, urlContent) {
+                //description table data
+                var dataDes = []
+                //condition when update a content
+                if (urlCont) {
+                    dataDes = {
+                        title: req.body.title,
+                        name: req.body.name,
+                        caption: req.body.caption,
+                        content: urlContent,
+                        type: req.body.type
+                    }
+                } else {
+                    dataDes = {
+                        title: req.body.title,
+                        name: req.body.name,
+                        caption: req.body.caption,
+                        type: req.body.type
+                    }
+                }
+                const newDes = await Descriptions.updateOne({ description_id: data.description_id.toString() }, dataDes);
 
-            // the id file to be replaced
-            const filePath = req.files; //req for file
+                //promotions table
+                var dataPromo = []
+                if (urlCover) {
+                    dataPromo = {
+                        title: req.body.title,
+                        name: req.body.name,
+                        caption: req.body.caption,
+                        category_id: req.body.category_id,
+                        cover_url: urlCover,
+                        creator_id: req.body.creator_id,
+                        description_id: newDes._id,
+                        province_target: req.body.province_target,
+                        city_target: req.body.city_target,
+                        rejected_message: req.body.rejected_message,
+                        reviewer_id: req.body.reviewer_id,
+                        status: req.body.status,
+                        updated_at: Date.now()
+                    }
+                } else {
+                    dataPromo = {
+                        title: req.body.title,
+                        name: req.body.name,
+                        caption: req.body.caption,
+                        category_id: req.body.category_id,
+                        creator_id: req.body.creator_id,
+                        description_id: newDes._id,
+                        province_target: req.body.province_target,
+                        city_target: req.body.city_target,
+                        rejected_message: req.body.rejected_message,
+                        reviewer_id: req.body.reviewer_id,
+                        status: req.body.status,
+                        updated_at: Date.now()
+                    }
+                }
+                const result = await Promotions.updateOne(dataPromo);
+            };
+
+            //req for file
+            const filePath = req.files;
+            var urlCov = "";
+            var urlCont = "";
 
             if (Object.keys(filePath).length === 0) {
-                res.send({ message: 'no media selected!' })
-            } else {
-                const covUrl = await updateDrive(filePath.cover[0], idCov);
-
-                // get link to save on database Mongo
-                const urlCov = covUrl.data.webViewLink;
-
-                //validations
-                const Schema = check.object({
-                    title: check.string().required(),
-                    name: check.string().required(),
-                    caption: check.string().required(),
-                    category_id: check.string().required(),
-                    creator_id: check.string().required(),
-                    province_target: check.string().empty('').default(null),
-                    city_target: check.string().empty('').default(null),
-                    rejected_message: check.string().required(),
-                    reviewer_id: check.string().required(),
-                    status: check.string().required(),
-                })
-                const { error } = Schema.validate(req.body)
-                if (error) {
-                    return res.send(error.message);
-                }
-                // update data
-                const newDes = await Descriptions.updateOne({ description_id: data.description_id }, {
-                    title: req.body.title,
-                    name: req.body.name,
-                    caption: req.body.caption,
-                    content: req.body.content,
-                    type: req.body.type
-                });
-
-                const result = await Promotions.updateOne({
-                    title: req.body.title,
-                    name: req.body.name,
-                    caption: req.body.caption,
-                    category_id: req.body.category_id,
-                    cover_url: urlCov,
-                    creator_id: req.body.creator_id,
-                    description_id: newDes._id,
-                    province_target: req.body.province_target,
-                    city_target: req.body.city_target,
-                    rejected_message: req.body.rejected_message,
-                    reviewer_id: req.body.reviewer_id,
-                    status: req.body.status,
-                })
+                const result = toDatabase(urlCov, urlCont)
                 if (result) {
-                    res.send({ message: 'Updated successfully!' })
+                    res.send({ message: 'Updated without media selected success!' })
+                }
+            } else {
+
+                const idCov = getId(data.cover_url);
+                const covUrl = await updateDrive(filePath.cover[0], idCov);
+                urlCov = covUrl.data.webViewLink;
+
+                Descriptions.findOne({ _id: data.description_id.toString() })
+                    .then(async (data) => {
+                        const idCont = getId(data.content);
+                        const content = await updateDrive(filePath.content[0], idCont);
+                        urlCont = content.data.webViewLink;
+                    })
+
+                const result = toDatabase(urlCov, urlCont)
+                if (result) {
+                    res.send({ message: 'Updated successfully' })
                 }
             }
         })
         .catch(err => {
-            res.status(500).send({ message: err });
+            console.log(err)
+            res.send({ message: err });
         });
 }
 
 //deleting data
 const deleting = async (req, res) => {
     const idData = req.params.id;
-    daleteMedia(idData)
+    daleteMedia(idData);
+    deleteDes(idData);
     Promotions.deleteOne({ _id: idData },
         (err) => {
             if (err) {
                 res.send({ message: err });
             } else
-                res.send({ message: "Data has been deleted!" });
+                res.send({ message: "Promotion deleted!" });
         }
     );
 };
