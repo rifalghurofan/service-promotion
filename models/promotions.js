@@ -20,7 +20,8 @@ const Promotions = mongoose.model(
         reviewer_id: String,
         status: {
             type: String,
-            enum: ['active', 'passive']
+            enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED', 'DELETED'],
+            default: 'DRAFT'
         },
         total_clicks: {
             type: Number,

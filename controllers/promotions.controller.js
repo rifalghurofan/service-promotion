@@ -1,6 +1,7 @@
 const Promotions = require("../models/promotions");
 const Descriptions = require("../models/descriptions");
 const check = require('joi');
+const fs = require('fs-extra');
 const { uploadDrive, updateDrive, getId, daleteMedia, deleteDes } = require('../utils/drive');
 require("dotenv").config();
 
@@ -112,6 +113,8 @@ const create = async (req, res) => {
                     //get link to save on database Mongo
                     const urlCov = covUrl.data.webViewLink;
                     const urlContent = content.data.webViewLink;
+
+                    fs.emptyDirSync('./uploads');
                     //get value of description from req.body
                     const newDes = new Descriptions({
                         title: req.body.title,
@@ -134,7 +137,7 @@ const create = async (req, res) => {
                         city_target: req.body.city_target,
                         rejected_message: req.body.rejected_message,
                         reviewer_id: req.body.reviewer_id,
-                        status: req.body.status,
+                        status: req.body.status.toUpperCase(),
                         created_at: Date.now(),
                         updated_at: Date.now(),
                     })
@@ -212,13 +215,12 @@ const likeOne = async (req, res) => {
 const updating = async (req, res) => {
     Promotions.findOne({ _id: req.params.id })
         .then(async data => {
-            // console.log(data)
             // store media to database
-            async function toDatabase(urlCover, urlContent) {
+            async function toDatabase(urlContent, urlCover) {
                 //description table data
                 var dataDes = []
                 //condition when update a content
-                if (urlCont) {
+                if (urlContent) {
                     dataDes = {
                         title: req.body.title,
                         name: req.body.name,
@@ -251,7 +253,7 @@ const updating = async (req, res) => {
                         city_target: req.body.city_target,
                         rejected_message: req.body.rejected_message,
                         reviewer_id: req.body.reviewer_id,
-                        status: req.body.status,
+                        status: req.params.status.toUpperCase(),
                         updated_at: Date.now()
                     }
                 } else {
@@ -266,7 +268,7 @@ const updating = async (req, res) => {
                         city_target: req.body.city_target,
                         rejected_message: req.body.rejected_message,
                         reviewer_id: req.body.reviewer_id,
-                        status: req.body.status,
+                        status: req.params.status.toUpperCase(),
                         updated_at: Date.now()
                     }
                 }
@@ -275,19 +277,19 @@ const updating = async (req, res) => {
 
             //req for file
             const filePath = req.files;
-            var urlCov = "";
             var urlCont = "";
+            var urlCov = "";
 
             if (Object.keys(filePath).length === 0) {
-                const result = toDatabase(urlCov, urlCont)
+                const result = toDatabase(urlCont, urlCov)
                 if (result) {
                     res.send({ message: 'Updated without media selected success!' })
                 }
             } else {
-
                 const idCov = getId(data.cover_url);
                 const covUrl = await updateDrive(filePath.cover[0], idCov);
                 urlCov = covUrl.data.webViewLink;
+
 
                 Descriptions.findOne({ _id: data.description_id.toString() })
                     .then(async (data) => {
@@ -296,7 +298,9 @@ const updating = async (req, res) => {
                         urlCont = content.data.webViewLink;
                     })
 
-                const result = toDatabase(urlCov, urlCont)
+                const result = toDatabase(urlCont, urlCov)
+
+                fs.emptyDirSync('./uploads');
                 if (result) {
                     res.send({ message: 'Updated successfully' })
                 }

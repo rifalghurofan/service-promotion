@@ -13,7 +13,7 @@ module.exports = function (app) {
         { name: 'cover', maxCount: 1 },
         { name: 'content', maxCount: 1 }
     ]), controller.create);
-    app.put('/promotions/update/:id', upload.fields([
+    app.put('/promotions/update/:id&:status', upload.fields([
         { name: 'cover', maxCount: 1 },
         { name: 'content', maxCount: 1 }
     ]), controller.updating);
