@@ -8,28 +8,24 @@ require("dotenv").config();
 //get all data without paginations
 const getAll = async (req, res) => {
     let promo = []
-    Promotions.find({},
-        function (err, result) {
-            if (err) {
-                res.send(err.message)
-            } else {
-                promo = result.map((element) => {
-                    const temp = element
-                    temp.created_at =
-                    {
-                        mili: temp.created_at,
-                        micro: temp.created_at * 1000
-                    }
-                    temp.updated_at =
-                    {
-                        mili: temp.updated_at,
-                        micro: temp.updated_at * 1000
-                    }
-                    return temp
-                })
-                res.send(promo)
-            }
-        }).populate('description_id')
+    Promotions.find({}).populate('description_id')
+        .then(data => {
+            stories = data.map((element) => {
+                const temp = element
+                temp.created_at =
+                {
+                    mili: temp.created_at,
+                    micro: temp.created_at * 1000
+                }
+                temp.updated_at =
+                {
+                    mili: temp.updated_at,
+                    micro: temp.updated_at * 1000
+                }
+                return temp
+            })
+            res.json({ promo })
+        })
 }
 //read data
 const read = async (req, res) => {
@@ -102,7 +98,6 @@ const create = async (req, res) => {
                 } if (promotions) {
                     res.status(500).send({ message: req.body.title + " was already added!" });
                 } else {
-
                     //req for file
                     const filePath = req.files;
 
