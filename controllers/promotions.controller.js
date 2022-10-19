@@ -3,14 +3,15 @@ const Descriptions = require("../models/descriptions");
 const check = require('joi');
 const fs = require('fs-extra');
 const { uploadDrive, updateDrive, getId, daleteMedia, deleteDes } = require('../utils/drive');
+const { deleteMedia } = require("../utils/firebase");
 require("dotenv").config();
 
 //get all data without paginations
 const getAll = async (req, res) => {
-    let promo = []
+    let promotion = []
     Promotions.find({}).populate('description_id')
         .then(data => {
-            stories = data.map((element) => {
+            promotion = data.map((element) => {
                 const temp = element
                 temp.created_at =
                 {
@@ -24,7 +25,7 @@ const getAll = async (req, res) => {
                 }
                 return temp
             })
-            res.json({ promo })
+            res.json(promotion)
         })
 }
 //read data
@@ -98,24 +99,16 @@ const create = async (req, res) => {
                 } if (promotions) {
                     res.status(500).send({ message: req.body.title + " was already added!" });
                 } else {
-                    //req for file
+
                     const filePath = req.files;
+                    const urlCont = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${filePath.content[0].originalname}`;
+                    const urlCov = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${filePath.cover[0].originalname}`;
 
-                    //upload media
-                    const covUrl = await uploadDrive(filePath.cover[0])
-                    const content = await uploadDrive(filePath.content[0])
-
-                    //get link to save on database Mongo
-                    const urlCov = covUrl.data.webViewLink;
-                    const urlContent = content.data.webViewLink;
-
-                    fs.emptyDirSync('./uploads');
-                    //get value of description from req.body
                     const newDes = new Descriptions({
                         title: req.body.title,
                         name: req.body.name,
                         caption: req.body.caption,
-                        content: urlContent,
+                        content: urlCont,
                         type: req.body.type
                     })
 
@@ -137,14 +130,14 @@ const create = async (req, res) => {
                         updated_at: Date.now(),
                     })
 
-                    //save data to database
-                    newProm.save(function (err, result) {
+                    // save data to database
+                    newProm.save(function (err, Promotion) {
                         if (err) {
                             res.status(500).send(err.message);
                             return;
                         } else {
                             newDes.save()
-                            res.status(500).send({ result });
+                            res.status(500).send({ Promotion });
                         }
                     })
                 }
@@ -211,94 +204,44 @@ const updating = async (req, res) => {
     Promotions.findOne({ _id: req.params.id })
         .then(async data => {
             // store media to database
-            async function toDatabase(urlContent, urlCover) {
-                //description table data
-                var dataDes = []
-                //condition when update a content
-                if (urlContent) {
-                    dataDes = {
-                        title: req.body.title,
-                        name: req.body.name,
-                        caption: req.body.caption,
-                        content: urlContent,
-                        type: req.body.type
-                    }
-                } else {
-                    dataDes = {
-                        title: req.body.title,
-                        name: req.body.name,
-                        caption: req.body.caption,
-                        type: req.body.type
-                    }
-                }
-                const newDes = await Descriptions.updateOne({ description_id: data.description_id.toString() }, dataDes);
-
-                //promotions table
-                var dataPromo = []
-                if (urlCover) {
-                    dataPromo = {
-                        title: req.body.title,
-                        name: req.body.name,
-                        caption: req.body.caption,
-                        category_id: req.body.category_id,
-                        cover_url: urlCover,
-                        creator_id: req.body.creator_id,
-                        description_id: newDes._id,
-                        province_target: req.body.province_target,
-                        city_target: req.body.city_target,
-                        rejected_message: req.body.rejected_message,
-                        reviewer_id: req.body.reviewer_id,
-                        status: req.params.status.toUpperCase(),
-                        updated_at: Date.now()
-                    }
-                } else {
-                    dataPromo = {
-                        title: req.body.title,
-                        name: req.body.name,
-                        caption: req.body.caption,
-                        category_id: req.body.category_id,
-                        creator_id: req.body.creator_id,
-                        description_id: newDes._id,
-                        province_target: req.body.province_target,
-                        city_target: req.body.city_target,
-                        rejected_message: req.body.rejected_message,
-                        reviewer_id: req.body.reviewer_id,
-                        status: req.params.status.toUpperCase(),
-                        updated_at: Date.now()
-                    }
-                }
-                const result = await Promotions.updateOne(dataPromo);
-            };
-
-            //req for file
+            //description table data
             const filePath = req.files;
-            var urlCont = "";
-            var urlCov = "";
+            const urlCont = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${filePath.content[0].originalname}`;
+            const urlCov = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${filePath.cover[0].originalname}`;
 
-            if (Object.keys(filePath).length === 0) {
-                const result = toDatabase(urlCont, urlCov)
-                if (result) {
-                    res.send({ message: 'Updated without media selected success!' })
-                }
-            } else {
-                const idCov = getId(data.cover_url);
-                const covUrl = await updateDrive(filePath.cover[0], idCov);
-                urlCov = covUrl.data.webViewLink;
+            var dataDes = []
+            var dataPromo = []
 
+            dataDes = {
+                title: req.body.title,
+                name: req.body.name,
+                caption: req.body.caption,
+                content: urlCont,
+                type: req.body.type
+            }
+            const newDes = await Descriptions.updateOne({ _id: data.description_id.toString() }, dataDes);
 
-                Descriptions.findOne({ _id: data.description_id.toString() })
-                    .then(async (data) => {
-                        const idCont = getId(data.content);
-                        const content = await updateDrive(filePath.content[0], idCont);
-                        urlCont = content.data.webViewLink;
-                    })
+            // console.log(data.description_id.toString())
 
-                const result = toDatabase(urlCont, urlCov)
+            dataPromo = {
+                title: req.body.title,
+                name: req.body.name,
+                caption: req.body.caption,
+                category_id: req.body.category_id,
+                cover_url: urlCov,
+                creator_id: req.body.creator_id,
+                description_id: data.description_id.toString(),
+                province_target: req.body.province_target,
+                city_target: req.body.city_target,
+                rejected_message: req.body.rejected_message,
+                reviewer_id: req.body.reviewer_id,
+                status: req.params.status.toUpperCase(),
+                updated_at: Date.now()
+            }
+            const newProm = await Promotions.updateOne(dataPromo);
 
-                fs.emptyDirSync('./uploads');
-                if (result) {
-                    res.send({ message: 'Updated successfully' })
-                }
+            if (newDes && newProm) {
+                res.send({ message: 'Updated successfully' })
             }
         })
         .catch(err => {
@@ -310,16 +253,23 @@ const updating = async (req, res) => {
 //deleting data
 const deleting = async (req, res) => {
     const idData = req.params.id;
-    daleteMedia(idData);
-    deleteDes(idData);
-    Promotions.deleteOne({ _id: idData },
-        (err) => {
-            if (err) {
-                res.send({ message: err });
-            } else
-                res.send({ message: "Promotion deleted!" });
-        }
-    );
+
+    Promotions.findOne({ _id: idData })
+        .then(data => {
+            if (data) {
+                deleteMedia(idData);
+                Promotions.deleteOne({ _id: idData })
+                    .then(() => {
+                        res.send('Deleted Succesfully!')
+                    })
+                    .catch(err => {
+                        res.send(err || 'Not found!');
+                    });
+
+            } else {
+                res.send({ message: 'Promotions not found!' })
+            }
+        })
 };
 
 module.exports = {
