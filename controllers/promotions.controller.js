@@ -1,13 +1,19 @@
+const redis = require('@redis/search')
 const Promotions = require("../models/promotions");
 const Descriptions = require("../models/descriptions");
 const check = require('joi');
-const fs = require('fs-extra');
-const { uploadDrive, updateDrive, getId, daleteMedia, deleteDes } = require('../utils/drive');
-const { deleteMedia } = require("../utils/firebase");
+const { uploadFirebase, deleteMedia } = require("../utils/firebase");
 require("dotenv").config();
 
+const search = async (req, res) => {
+    await Promotions.ft.search('name:stories')
+        .then(result => {
+            res.send(result)
+        })
+}
+
 //get all data without paginations
-const getAll = async (req, res) => {
+const dataPromosi = async (req, res) => {
     let promotion = []
     Promotions.find({}).populate('description_id')
         .then(data => {
@@ -85,7 +91,6 @@ const create = async (req, res) => {
         city_target: check.string().empty('').default(null),
         rejected_message: check.string().required(),
         reviewer_id: check.string().required(),
-        status: check.string().required(),
     })
     const { error } = Schema.validate(req.body)
     if (error) {
@@ -99,47 +104,53 @@ const create = async (req, res) => {
                 } if (promotions) {
                     res.status(500).send({ message: req.body.title + " was already added!" });
                 } else {
+                    if (Object.keys(req.files).length === 0) {
+                        return res.send({ message: 'no media selected!' })
+                    } else {
+                        const filePath = req.files;
+                        //upload to firebase
+                        const uploadCv = await uploadFirebase(filePath.cover[0])
+                        const uploadCn = await uploadFirebase(filePath.content[0])
 
-                    const filePath = req.files;
-                    const urlCont = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${filePath.content[0].originalname}`;
-                    const urlCov = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${filePath.cover[0].originalname}`;
+                        const urlCov = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${uploadCv}`;
+                        const urlCont = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${uploadCn}`;
 
-                    const newDes = new Descriptions({
-                        title: req.body.title,
-                        name: req.body.name,
-                        caption: req.body.caption,
-                        content: urlCont,
-                        type: req.body.type
-                    })
+                        const newDes = new Descriptions({
+                            title: req.body.title,
+                            name: req.body.name,
+                            caption: req.body.caption,
+                            content: urlCont,
+                            type: req.body.type.toUpperCase()
+                        })
 
-                    //get value of promotion from req.body
-                    const newProm = new Promotions({
-                        title: req.body.title,
-                        name: req.body.name,
-                        caption: req.body.caption,
-                        category_id: req.body.category_id,
-                        cover_url: urlCov,
-                        creator_id: req.body.creator_id,
-                        description_id: newDes._id,
-                        province_target: req.body.province_target,
-                        city_target: req.body.city_target,
-                        rejected_message: req.body.rejected_message,
-                        reviewer_id: req.body.reviewer_id,
-                        status: req.body.status.toUpperCase(),
-                        created_at: Date.now(),
-                        updated_at: Date.now(),
-                    })
+                        //get value of promotion from req.body
+                        const newProm = new Promotions({
+                            title: req.body.title,
+                            name: req.body.name,
+                            caption: req.body.caption,
+                            category_id: req.body.category_id,
+                            cover_url: urlCov,
+                            creator_id: req.body.creator_id,
+                            description_id: newDes._id,
+                            province_target: req.body.province_target,
+                            city_target: req.body.city_target,
+                            rejected_message: req.body.rejected_message,
+                            reviewer_id: req.body.reviewer_id,
+                            status: 'DRAFT',
+                            created_at: Date.now(),
+                            updated_at: Date.now(),
+                        })
 
-                    // save data to database
-                    newProm.save(function (err, Promotion) {
-                        if (err) {
-                            res.status(500).send(err.message);
-                            return;
-                        } else {
-                            newDes.save()
-                            res.status(500).send({ Promotion });
-                        }
-                    })
+                        // save data to database
+                        newProm.save(function (err, result) {
+                            if (err) {
+                                return res.status(500).send(err.message);
+                            } else {
+                                newDes.save()
+                                res.status(500).send({ result });
+                            }
+                        })
+                    }
                 }
             }
         )
@@ -203,67 +214,82 @@ const likeOne = async (req, res) => {
 const updating = async (req, res) => {
     Promotions.findOne({ _id: req.params.id })
         .then(async data => {
+            const lastDat = await Descriptions.findOne({ _id: data.description_id.toString() }).then(dataLast => {
+                return dataLast;
+            })
+
             // store media to database
             //description table data
             const filePath = req.files;
-            const urlCont = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${filePath.content[0].originalname}`;
-            const urlCov = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${filePath.cover[0].originalname}`;
+            var urlContent = []
+            var urlCover = []
 
-            var dataDes = []
-            var dataPromo = []
+            async function up(urlCont, urlCov) {
+                var dataDes = []
+                var dataPromo = []
 
-            dataDes = {
-                title: req.body.title,
-                name: req.body.name,
-                caption: req.body.caption,
-                content: urlCont,
-                type: req.body.type
+                dataDes = {
+                    title: req.body.title,
+                    name: req.body.name,
+                    caption: req.body.caption,
+                    content: urlCont,
+                    type: req.body.type.toUpperCase()
+                }
+                const newDes = await Descriptions.updateOne({ _id: data.description_id.toString() }, dataDes);
+
+                dataPromo = {
+                    title: req.body.title,
+                    name: req.body.name,
+                    caption: req.body.caption,
+                    category_id: req.body.category_id,
+                    cover_url: urlCov,
+                    creator_id: req.body.creator_id,
+                    description_id: data.description_id.toString(),
+                    province_target: req.body.province_target,
+                    city_target: req.body.city_target,
+                    rejected_message: req.body.rejected_message,
+                    reviewer_id: req.body.reviewer_id,
+                    status: req.params.status.toUpperCase(),
+                    updated_at: Date.now()
+                }
+                const newProm = await Promotions.updateOne(dataPromo);
             }
-            const newDes = await Descriptions.updateOne({ _id: data.description_id.toString() }, dataDes);
 
-            // console.log(data.description_id.toString())
+            if (Object.keys(filePath).length === 0) {
+                urlContent = lastDat.content
+                urlCover = data.cover_url
 
-            dataPromo = {
-                title: req.body.title,
-                name: req.body.name,
-                caption: req.body.caption,
-                category_id: req.body.category_id,
-                cover_url: urlCov,
-                creator_id: req.body.creator_id,
-                description_id: data.description_id.toString(),
-                province_target: req.body.province_target,
-                city_target: req.body.city_target,
-                rejected_message: req.body.rejected_message,
-                reviewer_id: req.body.reviewer_id,
-                status: req.params.status.toUpperCase(),
-                updated_at: Date.now()
-            }
-            const newProm = await Promotions.updateOne(dataPromo);
+                up(urlContent, urlCover)
+                res.send({ message: 'Updated successfully with no media selected!' })
+            } else {
+                const uploadCn = await uploadFirebase(filePath.content[0])
+                const uploadCv = await uploadFirebase(filePath.cover[0])
 
-            if (newDes && newProm) {
+                urlContent = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${uploadCn}`;
+                urlCover = `https://storage.googleapis.com/${process.env.BUCKET_NAME}/${uploadCv}`;
+
+                up(urlContent, urlCover)
                 res.send({ message: 'Updated successfully' })
             }
         })
         .catch(err => {
-            console.log(err)
-            res.send({ message: err });
+            res.status(500).send(err.message);
         });
 }
 
 //deleting data
 const deleting = async (req, res) => {
     const idData = req.params.id;
-
     Promotions.findOne({ _id: idData })
         .then(data => {
             if (data) {
                 deleteMedia(idData);
                 Promotions.deleteOne({ _id: idData })
                     .then(() => {
-                        res.send('Deleted Succesfully!')
+                        res.send({ message: 'Deleted Succesfully!' })
                     })
                     .catch(err => {
-                        res.send(err || 'Not found!');
+                        res.send(err || { message: 'Not found!' });
                     });
 
             } else {
@@ -273,7 +299,8 @@ const deleting = async (req, res) => {
 };
 
 module.exports = {
-    getAll,
+    search,
+    dataPromosi,
     read,
     viewOne,
     click,

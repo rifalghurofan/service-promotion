@@ -19,6 +19,7 @@
   "homepage": "https://gitlab.com/andalan-solusi-cemerlang/internship/service-promotion#readme",
   "dependencies": {
     "@firebase/storage": "^0.9.12",
+    "@redis/search": "^1.1.0",
     "body-parser": "^1.20.0",
     "compression": "^1.7.4",
     "dotenv": "^16.0.2",
@@ -33,6 +34,8 @@
     "multer-firebase-storage": "^3.0.3",
     "nodemon": "^2.0.20",
     "path": "^0.12.7",
+    "redis": "^4.3.1",
+    "redis-redisearch": "^1.0.1",
     "salted-md5": "^4.0.3"
   },
   "description": "",

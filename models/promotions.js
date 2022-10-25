@@ -33,6 +33,7 @@ const Promotions = mongoose.model(
         },
         created_at: Object,
         updated_at: Object,
+        expired_at: Object,
     }, {
         collection: 'Promotions',
         versionKey: false

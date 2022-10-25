@@ -8,7 +8,7 @@ const Descriptions = mongoose.model(
         content: String,
         type: {
             type: String,
-            enum: ['complete', 'incomplete']
+            enum: ['COMPLETE', 'INCOMPLETE']
         }
     }, {
         collection: 'Descriptions',
