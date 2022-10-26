@@ -11,9 +11,7 @@ node_modules/
 uploads
 
 #utils gdrive
-utils/
-drive.js
+utils/drive.js
 
 #config gdrive and serviceAccountKey
 config/
-serviceAccountKey.json
