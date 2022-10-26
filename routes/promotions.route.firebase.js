@@ -4,11 +4,12 @@ const controller = require('../controllers/promotions.controller');
 const simpan = require('../controllers/simpanDraftPromosi');
 const publish = require('../controllers/terbitkan');
 const edit = require('../controllers/editPromosi');
+const cari = require('../controllers/cariPromosi')
 
 module.exports = function (app) {
     app.get('/', controller.dataPromosi);//get all data promotions
 
-    app.get('/promotions', controller.read);
+    app.get('/promotions', cari.cariPromosi);
 
     app.get('/promotions/view/:id', controller.viewOne);//get one for viewing promotions
 

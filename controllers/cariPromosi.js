@@ -1,16 +1,16 @@
 const Promotions = require('../models/promotions')
 
-const read = async (req, res) => {
+const cariPromosi = async (req, res) => {
+    const search = req.query.search;
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
-    const search = req.query.search;
     const startIndex = (page - 1) * limit;
 
     const result = {};
     try {
         let promo = []
         result.results = await Promotions.find({
-            city_target: { $regex: search, $options: 'i' }
+            name: { $regex: search, $options: 'i' }
         }, function (err, result) {
             if (err) {
                 res.send(err.message)
@@ -29,15 +29,15 @@ const read = async (req, res) => {
                     }
                     return temp
                 })
-                res.send(promo)
             }
         }).clone().populate('description_id').limit(limit).skip(startIndex);
         res.send({
-            data: result,
+            data: promo,
             page: page,
             limit: limit
         });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.send({ message: err.message })
     }
 };
+module.exports = { cariPromosi }
