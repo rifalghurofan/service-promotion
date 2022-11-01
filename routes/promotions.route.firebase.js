@@ -1,50 +1,37 @@
-const express = require("express");
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() })
 const controller = require('../controllers/promotions.controller');
-
-const compression = require('compression')
-const saltedMd5 = require('salted-md5');
-const path = require('path');
+const simpan = require('../controllers/simpanDraftPromosi');
+const publish = require('../controllers/terbitkan');
+const edit = require('../controllers/editPromosi');
+const cari = require('../controllers/cariPromosi')
 
 module.exports = function (app) {
-    app.get('/', controller.getAll);//get all data promotions
-    app.get('/promotions', controller.read);
+    app.get('/', controller.dataPromosi);//get all data promotions
+
+    app.get('/promotions', cari.cariPromosi);
+
     app.get('/promotions/view/:id', controller.viewOne);//get one for viewing promotions
+
     app.get('/promotions/link/:id', controller.click);//get clicked linked property
+
     app.get('/promotions/like/:id', controller.likeOne);//get like for promotions
 
-    // app.post('/promotions/create', upload.fields([
-    //     { name: 'cover', maxCount: 1 },
-    //     { name: 'content', maxCount: 1 }
-    // ]), controller.create);
+    app.get('/promotions/publish/:id', publish.terbitkan);//terbitkan
 
-    app.put('/promotions/update/:id&:status', upload.fields([
-        { name: 'cover', maxCount: 1 },
-        { name: 'content', maxCount: 1 }
-    ]), controller.updating);
+    app.post('/promotions/draft',
+        upload.fields([
+            { name: 'cover', maxCount: 1 },
+            { name: 'content', maxCount: 1 }
+        ]), simpan.simpanDraftPromosi);
+
+    app.put('/promotions/edit/:id',
+        upload.fields([
+            { name: 'cover', maxCount: 1 },
+            { name: 'content', maxCount: 1 }
+        ]), edit.editPromosi);
+
     app.delete('/promotions/delete/:id', controller.deleting);
+    app.get('/promotions/search', controller.search);
 
-
-    // view engine setup
-    app.set('views', path.join(__dirname, 'static', 'views'))
-    app.set('view engine', 'ejs')
-    app.use(compression())
-    app.use('/public', express.static(path.join(__dirname, 'static', 'public')))
-
-    var admin = require("firebase-admin");
-    var serviceAccount = require("../config/serviceAccountKey.json");
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        storageBucket: process.env.BUCKET_URL
-    });
-
-    app.locals.bucket = admin.storage().bucket()
-
-    app.post('/upload', upload.single('file'), async (req, res) => {
-        const name = saltedMd5(req.file.originalname, 'SUPER-S@LT!')
-        const fileName = name + path.extname(req.file.originalname)
-        await app.locals.bucket.file(fileName).createWriteStream().end(req.file.buffer)
-        res.send('done');
-    })
 }

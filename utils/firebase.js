@@ -1,17 +1,19 @@
 const Multer = require('multer')
-const Admin = require('firebase-admin')
+const admin = require('firebase-admin')
 const FirebaseStorage = require('multer-firebase-storage')
 const config = require('../config/serviceAccountKey.json')
 const Promotions = require('../models/promotions');
 const Descriptions = require('../models/descriptions');
+const saltedMd5 = require('salted-md5');
+const path = require('path');
 require('dotenv');
 
-Admin.initializeApp({
-    credential: Admin.credential.cert(config),
+admin.initializeApp({
+    credential: admin.credential.cert(config),
     storageBucket: process.env.BUCKET_NAME
 })
 
-const bucket = Admin.storage().bucket()
+const bucket = admin.storage().bucket()
 
 const multer = Multer({
     storage: FirebaseStorage({
@@ -24,6 +26,13 @@ const multer = Multer({
         public: true
     })
 })
+
+const uploadFirebase = (filePath) => {
+    const name = saltedMd5(filePath.originalname, 'SUPER-S@LT!')
+    const fileName = name + path.extname(filePath.originalname)
+    bucket.file(fileName).createWriteStream().end(filePath.buffer)
+    return fileName;
+}
 
 const deleteMedia = (id) => {
     //delete media in promotion
@@ -49,6 +58,13 @@ const deleteMedia = (id) => {
                         .catch(err => {
                             console.log('Content Not found!');
                         });
+                    Descriptions.deleteOne({ _id: dataProm.description_id })
+                        .then(() => {
+                            console.log('Descriptions deleted!')
+                        })
+                        .catch(err => {
+                            console.log('Descriptions Not found!');
+                        });
                 })
 
         })
@@ -59,5 +75,6 @@ const deleteMedia = (id) => {
 
 module.exports = {
     multer,
+    uploadFirebase,
     deleteMedia
 } 
