@@ -1,9 +1,7 @@
 const Promotions = require('../models/promotions')
-const Descriptions = require('../models/descriptions')
 
 const detailPromosi = async (req, res) => {
-    Promotions.findOne({ _id: req.params.id })
-        .populate('description_id')
+    await Promotions.findOne({ _id: req.params.id })
         .then(data => {
             res.send(data);
         })

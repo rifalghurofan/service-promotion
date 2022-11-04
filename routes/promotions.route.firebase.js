@@ -9,29 +9,29 @@ const cari = require('../controllers/cariPromosi')
 module.exports = function (app) {
     app.get('/', controller.dataPromosi);//get all data promotions
 
-    app.get('/promotions', cari.cariPromosi);
+    app.get('/', cari.cariPromosi);
 
-    app.get('/promotions/view/:id', controller.viewOne);//get one for viewing promotions
+    app.get('/view/:id', controller.viewOne);//get one for viewing promotions
 
-    app.get('/promotions/link/:id', controller.click);//get clicked linked property
+    app.get('/click/:id', controller.click);//get clicked linked property
 
-    app.get('/promotions/like/:id', controller.likeOne);//get like for promotions
+    app.get('/like/:id', controller.likeOne);//get like for promotions
 
-    app.get('/promotions/publish/:id', publish.terbitkan);//terbitkan
+    app.get('/terbitkan/:id', publish.terbitkan);//terbitkan
 
-    app.post('/promotions/draft',
+    app.post('/simpanDraftPromosi',
         upload.fields([
             { name: 'cover', maxCount: 1 },
             { name: 'content', maxCount: 1 }
         ]), simpan.simpanDraftPromosi);
 
-    app.put('/promotions/edit/:id',
+    app.put('/editPromosi/:id',
         upload.fields([
             { name: 'cover', maxCount: 1 },
             { name: 'content', maxCount: 1 }
         ]), edit.editPromosi);
 
-    app.delete('/promotions/delete/:id', controller.deleting);
-    app.get('/promotions/search', controller.search);
+    app.delete('/delete/:id', controller.deleting);
+    app.get('/search', controller.search);
 
 }

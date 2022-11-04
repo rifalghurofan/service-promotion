@@ -30,5 +30,16 @@
   "documentation": "https://www.getpostman.com/collections/8800510d57b390e83629",
   "devDependencies": {
     "nodemon": "^2.0.20"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/andalan-solusi-cemerlang/internship/service-promotion.git"
+  },
+  "keywords": [],
+  "author": "",
+  "bugs": {
+    "url": "https://gitlab.com/andalan-solusi-cemerlang/internship/service-promotion/issues"
+  },
+  "homepage": "https://gitlab.com/andalan-solusi-cemerlang/internship/service-promotion#readme",
+  "description": ""
 }

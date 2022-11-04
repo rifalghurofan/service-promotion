@@ -8,20 +8,15 @@ const Promotions = mongoose.model(
         category_id: String,
         cover_url: String,
         creator_id: String,
-        description_id: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Descriptions"
-            }
-        ],
+        description: Object,
         province_target: String,
         city_target: String,
         rejected_message: String,
         reviewer_id: String,
         status: {
             type: String,
-            enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED', 'DELETED'],
-            default: 'DRAFT'
+            enum: ["PENDING", "ACTIVE", "ARCHIVED", "DELETED", "REJECTED", "HIDE"],
+            default: "PENDING"
         },
         total_clicks: {
             type: Number,
