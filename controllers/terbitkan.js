@@ -1,6 +1,6 @@
 const controller = require('./promotions.controller')
 const Promotions = require('../models/promotions')
-const Descriptions = require('../models/descriptions')
+
 
 const terbitkan = (req, res) => {
     //function for generate expired time
