@@ -211,7 +211,7 @@ const uploadFilePromosi = async (req, res) => {
 
     const uploadCover = await storageRef.upload(file.path, {
         gzip: true,
-        destination: `${directory}${file.originalname}`,
+        destination: `${directory}/${file.originalname}`,
     });
 
     await storageRef
