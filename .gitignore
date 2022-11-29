@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# dotenv environment variables file
+.env
+
+# upload files
+uploads
+
+#utils gdrive
+utils/drive.js
+
+#controller
+controllers/cariPromosi.js
+controllers/detailPromosi.js
+controllers/simpanDraftPromosi.js
+controllers/terbitkan.js
+controllers/uploadCover.js
+controllers/editPromosi.js
+
+#config
+config/serviceAccountKey.js
