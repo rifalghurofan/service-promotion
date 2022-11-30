@@ -16,7 +16,7 @@ db.mongoose
             useUnifiedTopology: true,
             useNewUrlParser: true,
         },
-        6000000
+        60000
     )
     .then(() => {
         console.log(

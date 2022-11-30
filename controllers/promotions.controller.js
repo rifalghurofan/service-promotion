@@ -2,6 +2,7 @@ const Promotions = require("../models/promotions");
 const { admin } = require("../utils/firebase");
 const storageRef = admin.storage().bucket();
 var fs2 = require("fs-extra");
+const { uid } = require("uid");
 require("dotenv").config();
 
 const muatKelolaPromosi = async (req, res) => {
@@ -9,21 +10,30 @@ const muatKelolaPromosi = async (req, res) => {
     const limit = parseInt(req.query.limit);
     const startIndex = (page - 1) * limit;
 
-    Promotions.find({})
-        .sort({ updated_at: -1 })
+    await Promotions.find({})
+        .sort({ updated_at: 1 })
         .limit(limit)
         .skip(startIndex)
         .then((data) => {
             let newData = [];
             data.map((element) => {
-                let newElement = {
-                    ...element._doc,
-                    updated_at: new Date(element.updated_at).getTime(),
-                    created_at: new Date(element.created_at).getTime(),
-                    expired_at: new Date(element.expired_at).getTime(),
-                };
-
-                newData.push(newElement);
+                if (!isNaN(element.created_at)) {
+                    let newElement = {
+                        ...element._doc,
+                        updated_at: parseInt(element.updated_at),
+                        created_at: parseInt(element.created_at),
+                        expired_at: parseInt(element.expired_at),
+                    };
+                    newData.push(newElement);
+                } else {
+                    let newElements = {
+                        ...element._doc,
+                        updated_at: new Date(element.updated_at).getTime(),
+                        created_at: new Date(element.created_at).getTime(),
+                        expired_at: new Date(element.expired_at).getTime(),
+                    };
+                    newData.push(newElements);
+                }
             });
             res.status(200).json({
                 status: "OK",
@@ -38,23 +48,42 @@ const muatKelolaPromosi = async (req, res) => {
 const detailPromosi = async (req, res) => {
     await Promotions.findOne({ _id: req.params.id })
         .then((data) => {
-            let newData = [];
-            [data].map((element) => {
-                let newElement = {
-                    ...element._doc,
-                    updated_at: new Date(element.updated_at).getTime(),
-                    created_at: new Date(element.created_at).getTime(),
-                    expired_at: new Date(element.expired_at).getTime(),
-                };
+            if (!isNaN(data.created_at)) {
+                let newData = [];
+                [data].map((element) => {
+                    let newElement = {
+                        ...element._doc,
+                        updated_at: parseInt(element.updated_at),
+                        created_at: parseInt(element.created_at),
+                        expired_at: parseInt(element.expired_at),
+                    };
 
-                newData.push(newElement);
-            });
-            res.status(200).json({
-                status: "OK",
-                data: newData,
-            });
+                    newData.push(newElement);
+                });
+                res.status(200).json({
+                    status: "OK",
+                    data: newData[0],
+                });
+            } else {
+                let newData = [];
+                [data].map((element) => {
+                    let newElement = {
+                        ...element._doc,
+                        updated_at: new Date(element.updated_at).getTime(),
+                        created_at: new Date(element.created_at).getTime(),
+                        expired_at: new Date(element.expired_at).getTime(),
+                    };
+
+                    newData.push(newElement);
+                });
+                res.status(200).json({
+                    status: "OK",
+                    data: newData[0],
+                });
+            }
         })
         .catch((err) => {
+            console.log(err);
             res.status(500).json({
                 status: "ERR",
                 message: err.message,
@@ -67,27 +96,32 @@ const tambahPromosi = async (req, res) => {
     //validations
     const field = [
         "title",
+        "creator_id",
         "name",
         "caption",
-        "category_id",
-        "creator_id",
-        "province_target",
-        "city_target",
-        "rejected_message",
-        "reviewer_id",
+        "category",
+        "creator",
     ];
     let required = [];
     const {
+        cover_url,
         title,
+        creator_id,
         name,
         caption,
-        category_id,
-        creator_id,
-        province_target,
+        description,
+        likes,
+        is_liked,
+        category,
         city_target,
+        province_target,
+        total_clicks,
+        total_views,
+        creator,
+        reviewer,
         rejected_message,
-        reviewer_id,
     } = req.body;
+
     field.forEach((e) => {
         if (!req.body[e]) {
             required.push(e);
@@ -101,18 +135,26 @@ const tambahPromosi = async (req, res) => {
     } else {
         //get value of promotion from req.body
         await Promotions.create({
+            id: uid(24),
             title: title,
             name: name,
             caption: caption,
-            category_id: category_id,
+            category: category,
+            cover_url: cover_url,
+            creator: creator,
             creator_id: creator_id,
+            description: description,
             province_target: province_target,
             city_target: city_target,
             rejected_message: rejected_message,
-            reviewer_id: reviewer_id,
+            reviewer: reviewer,
             status: "PENDING",
+            likes: likes,
+            is_liked: is_liked,
+            total_clicks: total_clicks,
+            total_views: total_views,
             created_at: Date.now(),
-            updated_at: Date.now(),
+            expired_at: Date.now(),
         })
             .then((data) => {
                 res.status(200).json({
@@ -132,76 +174,68 @@ const tambahPromosi = async (req, res) => {
 
 //update data
 const editPromosi = async (req, res) => {
-    //validations
-    const field = [
-        "title",
-        "name",
-        "caption",
-        "category_id",
-        "creator_id",
-        "province_target",
-        "city_target",
-        "rejected_message",
-        "reviewer_id",
-    ];
-    let required = [];
     const {
+        cover_url,
         title,
+        creator_id,
         name,
         caption,
-        category_id,
-        creator_id,
-        province_target,
+        description,
+        likes,
+        is_liked,
+        category,
         city_target,
+        province_target,
+        total_clicks,
+        total_views,
+        creator,
+        reviewer,
         rejected_message,
-        reviewer_id,
     } = req.body;
-    field.forEach((e) => {
-        if (!req.body[e]) {
-            required.push(e);
-        }
-    });
-    if (required.length > 0) {
-        res.status(400).json({
-            status: "error",
-            message: `please fill required field : ${required}!`,
-        });
-    } else {
-        Promotions.findOneAndUpdate(
-            {
-                _id: req.params.id,
+
+    Promotions.findOneAndUpdate(
+        {
+            _id: req.params.id,
+        },
+        {
+            $set: {
+                title: title,
+                name: name,
+                caption: caption,
+                category: category,
+                cover_url: cover_url,
+                creator: creator,
+                creator_id: creator_id,
+                description: description,
+                province_target: province_target,
+                city_target: city_target,
+                rejected_message: rejected_message,
+                reviewer: reviewer,
+                status: "PENDING",
+                likes: likes,
+                is_liked: is_liked,
+                total_clicks: total_clicks,
+                total_views: total_views,
+                updated_at: Date.now(),
+                expired_at: Date.now(),
             },
-            {
-                $set: {
-                    title: title,
-                    name: name,
-                    caption: caption,
-                    category_id: category_id,
-                    creator_id: creator_id,
-                    province_target: province_target,
-                    city_target: city_target,
-                    rejected_message: rejected_message,
-                    reviewer_id: reviewer_id,
-                    status: "PENDING",
-                    updated_at: Date.now(),
-                },
-            },
-            { new: true }
-        )
-            .then((data) => {
-                res.status(200).json({
-                    status: "OK",
-                    message: "Promosi di edit!",
-                    data: data,
-                });
-            })
-            .catch((err) => {
-                res.status(500).json({
-                    status: "ERR",
-                    message: err.message,
-                });
+        },
+        { new: true }
+    )
+        .then((data) => {
+            res.status(200).json({
+                status: "OK",
+                message: "Promosi di edit!",
+                data: data,
             });
-    }
+        })
+        .catch((err) => {
+            res.status(500).json({
+                status: "ERR",
+                message: err.message,
+            });
+        });
+    // }
 };
 
 const uploadFilePromosi = async (req, res) => {
@@ -214,6 +248,7 @@ const uploadFilePromosi = async (req, res) => {
         destination: `${directory}/${file.originalname}`,
     });
 
+    let urlCover = [];
     await storageRef
         .file(uploadCover[0].name)
         .getSignedUrl({
@@ -222,18 +257,20 @@ const uploadFilePromosi = async (req, res) => {
         })
         .then((result) => {
             fs2.emptyDirSync("./public/cover");
-            res.status(200).json({
-                status: "OK",
-                message: "Uploaded",
-                file: result[0],
-            });
+            urlCover = result[0];
         })
         .catch((err) => {
+            console.log(err);
             res.status(200).json({
                 status: "ERR",
                 message: err.message,
             });
         });
+    res.status(200).json({
+        status: "OK",
+        message: "Uploaded",
+        data: urlCover,
+    });
 };
 
 const cariPromosi = async (req, res) => {
@@ -273,23 +310,23 @@ const cariPromosi = async (req, res) => {
     }
 };
 
-// //deleting data
-// const deletePromosi = async (req, res) => {
-//     const { id } = req.params;
-//     Promotions.findOne({ _id: id }).then((data) => {
-//         if (data) {
-//             Promotions.deleteOne({ _id: id })
-//                 .then(() => {
-//                     res.send({ message: "Deleted Succesfully!" });
-//                 })
-//                 .catch((err) => {
-//                     res.send(err || { message: "Not found!" });
-//                 });
-//         } else {
-//             res.send({ message: "Promotions not found!" });
-//         }
-//     });
-// };
+//deleting data
+const deletePromosi = async (req, res) => {
+    const { id } = req.params;
+    await Promotions.findOne({ _id: id }).then((data) => {
+        if (data) {
+            Promotions.deleteOne({ _id: id })
+                .then(() => {
+                    res.send({ message: "Deleted Succesfully!" });
+                })
+                .catch((err) => {
+                    res.send(err || { message: "Not found!" });
+                });
+        } else {
+            res.send({ message: "Promotions not found!" });
+        }
+    });
+};
 
 // const terbitkan = (req, res) => {
 //     //function for generate expired time
@@ -327,4 +364,5 @@ module.exports = {
     tambahPromosi,
     cariPromosi,
     uploadFilePromosi,
+    deletePromosi,
 };

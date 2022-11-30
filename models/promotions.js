@@ -3,18 +3,37 @@ const Promotions = mongoose.model(
     "promosi",
     new mongoose.Schema(
         {
-            title: String,
-            name: String,
-            caption: String,
-            category_id: String,
+            id: String,
             cover_url: {
                 type: String,
                 default: null,
             },
+            title: String,
             creator_id: String,
+            name: String,
+            caption: String,
+            description: Array,
+            likes: Number,
+            is_likes: {
+                type: Boolean,
+                default: false,
+            },
+            category: String,
+            city_target: Array,
             province_target: String,
-            city_target: String,
-            rejected_message: String,
+            total_clicks: {
+                type: Number,
+                default: 0,
+            },
+            total_views: {
+                type: Number,
+                default: 0,
+            },
+            created_at: String,
+            updated_at: String,
+            deleted_at: String,
+            expired_at: String,
+            creator: Object,
             reviewer_id: String,
             status: {
                 type: String,
@@ -28,17 +47,7 @@ const Promotions = mongoose.model(
                 ],
                 default: "PENDING",
             },
-            total_clicks: {
-                type: Number,
-                default: 0,
-            },
-            total_views: {
-                type: Number,
-                default: 0,
-            },
-            created_at: String,
-            updated_at: String,
-            expired_at: String,
+            rejected_message: String,
         },
         {
             collection: "promosi",

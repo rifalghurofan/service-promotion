@@ -7,11 +7,12 @@ module.exports = function (app) {
     app.get("/muatKelolaPromosi", controller.muatKelolaPromosi);
     app.get("/detailPromosi/:id", controller.detailPromosi);
     app.get("/cariPromosi", controller.cariPromosi);
-    app.put("/editPromosi/:id", controller.editPromosi);
+    app.patch("/editPromosi/:id", controller.editPromosi);
     app.post("/tambahPromosi", controller.tambahPromosi);
     app.post(
         "/uploadFilePromosi",
-        upload.single("cover"),
+        upload.single("gambar"),
         controller.uploadFilePromosi
     );
+    app.delete("/deletePromosi/:id", controller.deletePromosi);
 };
