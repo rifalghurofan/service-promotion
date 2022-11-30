@@ -13,5 +13,13 @@ uploads
 #utils gdrive
 utils/drive.js
 
-#config gdrive and serviceAccountKey
-config/
+#controller
+controllers/cariPromosi.js
+controllers/detailPromosi.js
+controllers/simpanDraftPromosi.js
+controllers/terbitkan.js
+controllers/uploadCover.js
+controllers/editPromosi.js
+
+#config
+config/serviceAccountKey.js

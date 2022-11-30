@@ -1,37 +1,18 @@
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() })
-const controller = require('../controllers/promotions.controller');
-const simpan = require('../controllers/simpanDraftPromosi');
-const publish = require('../controllers/terbitkan');
-const edit = require('../controllers/editPromosi');
-const cari = require('../controllers/cariPromosi')
+const Multer = require("multer");
+const { multerStorage } = require("../utils/firebase");
+const upload = Multer({ storage: multerStorage });
+const controller = require("../controllers/promotions.controller");
 
 module.exports = function (app) {
-    app.get('/', controller.dataPromosi);//get all data promotions
-
-    app.get('/promotions', cari.cariPromosi);
-
-    app.get('/promotions/view/:id', controller.viewOne);//get one for viewing promotions
-
-    app.get('/promotions/link/:id', controller.click);//get clicked linked property
-
-    app.get('/promotions/like/:id', controller.likeOne);//get like for promotions
-
-    app.get('/promotions/publish/:id', publish.terbitkan);//terbitkan
-
-    app.post('/promotions/draft',
-        upload.fields([
-            { name: 'cover', maxCount: 1 },
-            { name: 'content', maxCount: 1 }
-        ]), simpan.simpanDraftPromosi);
-
-    app.put('/promotions/edit/:id',
-        upload.fields([
-            { name: 'cover', maxCount: 1 },
-            { name: 'content', maxCount: 1 }
-        ]), edit.editPromosi);
-
-    app.delete('/promotions/delete/:id', controller.deleting);
-    app.get('/promotions/search', controller.search);
-
-}
+    app.get("/muatKelolaPromosi", controller.muatKelolaPromosi);
+    app.get("/detailPromosi/:id", controller.detailPromosi);
+    app.get("/cariPromosi", controller.cariPromosi);
+    app.patch("/editPromosi/:id", controller.editPromosi);
+    app.post("/tambahPromosi", controller.tambahPromosi);
+    app.post(
+        "/uploadFilePromosi",
+        upload.single("gambar"),
+        controller.uploadFilePromosi
+    );
+    app.delete("/deletePromosi/:id", controller.deletePromosi);
+};
