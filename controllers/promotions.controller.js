@@ -9,8 +9,8 @@ const muatKelolaPromosi = async (req, res) => {
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
     const startIndex = (page - 1) * limit;
-
-    await Promotions.find({})
+    //  status: { $ne: "ARCHIVED" }
+    await Promotions.find({ status: { $ne: "ARCHIVED" } })
         .sort({ updated_at: 1 })
         .limit(limit)
         .skip(startIndex)
@@ -40,6 +40,13 @@ const muatKelolaPromosi = async (req, res) => {
                 data: newData,
                 page: page,
                 limit: limit,
+            });
+        })
+        .catch((err) => {
+            res.status(500).json({
+                status: "ERR",
+                message: err.message,
+                data: [],
             });
         });
 };
@@ -191,9 +198,12 @@ const editPromosi = async (req, res) => {
         creator,
         reviewer,
         rejected_message,
+        created_at,
+        expired_at,
+        status,
     } = req.body;
 
-    Promotions.findOneAndUpdate(
+    await Promotions.findOneAndUpdate(
         {
             _id: req.params.id,
         },
@@ -211,13 +221,14 @@ const editPromosi = async (req, res) => {
                 city_target: city_target,
                 rejected_message: rejected_message,
                 reviewer: reviewer,
-                status: "PENDING",
+                status: status,
                 likes: likes,
                 is_liked: is_liked,
                 total_clicks: total_clicks,
                 total_views: total_views,
+                created_at: created_at,
                 updated_at: Date.now(),
-                expired_at: Date.now(),
+                expired_at: expired_at,
             },
         },
         { new: true }

@@ -45,7 +45,6 @@ const Promotions = mongoose.model(
                     "REJECTED",
                     "HIDE",
                 ],
-                default: "PENDING",
             },
             rejected_message: String,
         },
