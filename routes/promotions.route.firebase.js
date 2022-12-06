@@ -4,15 +4,15 @@ const upload = Multer({ storage: multerStorage });
 const controller = require("../controllers/promotions.controller");
 
 module.exports = function (app) {
-    app.get("/muatKelolaPromosi", controller.muatKelolaPromosi);
-    app.get("/detailPromosi/:id", controller.detailPromosi);
-    app.get("/cariPromosi", controller.cariPromosi);
-    app.patch("/editPromosi/:id", controller.editPromosi);
-    app.post("/tambahPromosi", controller.tambahPromosi);
+    app.get("/promotionService/muatKelolaPromosi", controller.muatKelolaPromosi);
+    app.get("/promotionService/detailPromosi/:id", controller.detailPromosi);
+    app.get("/promotionService/cariPromosi", controller.cariPromosi);
+    app.patch("/promotionService/editPromosi/:id", controller.editPromosi);
+    app.post("/promotionService/tambahPromosi", controller.tambahPromosi);
     app.post(
-        "/uploadFilePromosi",
+        "/promotionService/uploadFilePromosi",
         upload.single("gambar"),
         controller.uploadFilePromosi
     );
-    app.delete("/deletePromosi/:id", controller.deletePromosi);
+    app.delete("/promotionService/deletePromosi/:id", controller.deletePromosi);
 };
